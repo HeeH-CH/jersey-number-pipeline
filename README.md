@@ -72,7 +72,7 @@ Update configuration.py if required to set custom path to data or dependencies.
 ## Inference:
 To run the full inference pipeline for SoccerNet:
 ```
-python3 main.py SoccerNet test
+ㅕㅍ 
 ```
 To run legibility and jersey number inference for hockey:
 ```

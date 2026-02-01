@@ -510,10 +510,10 @@ def process_jersey_id_predictions_raw(file_path, useTS = False ):
 def identify_soccer_balls(image_dir, soccer_ball_list):
     # check 10 random images for each track, mark as soccer ball if the size matches typical soccer ball size
     ball_list = []
-    tracklets = os.listdir(image_dir)
+    tracklets = [t for t in os.listdir(image_dir) if not t.startswith('.')]
     for track in tqdm(tracklets):
         track_path = os.path.join(image_dir, track)
-        image_names = os.listdir(track_path)
+        image_names = [img for img in os.listdir(track_path) if not img.startswith('.')]
         sample = len(image_names) if len(image_names) < 10 else 10
         imgs = np.random.choice(image_names, size=sample, replace=False)
         width_list = []
@@ -790,7 +790,7 @@ def generate_crops_for_split(source, target, split):
 
     print("Update gt")
     # prune gt to remove images with no crops
-    crops_list_train = os.listdir(crops_dir)
+    crops_list_train = [c for c in os.listdir(crops_dir) if not c.startswith('.')]
     with open(os.path.join(target, split, split+'_gt.txt'), 'w') as tf:
         for index, row in old_gt.iterrows():
             if row['image'] in crops_list_train:

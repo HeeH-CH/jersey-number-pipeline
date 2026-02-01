@@ -12,6 +12,23 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.8"
 dynamic = ["optional-dependencies"]
+dependencies = [
+    "aiohttp>=3.8",
+    "click>=8.0",
+    "huggingface-hub>=0.16",
+    "nltk>=3.8",
+    "numpy>=1.24",
+    "pillow>=10.0",
+    "pytorch-lightning>=1.9.0",
+    "pyyaml>=6.0",
+    "regex>=2023",
+    "safetensors>=0.3",
+    "timm>=0.9",
+    "torch>=1.13",
+    "torchmetrics>=1.0",
+    "torchvision>=0.14",
+    "tqdm>=4.66",
+]
 
 [project.urls]
 Homepage = "https://github.com/baudm/parseq"
@@ -25,3 +42,12 @@ optional-dependencies.train = { file = ["requirements/train.txt"] }
 optional-dependencies.test = { file = ["requirements/test.txt"] }
 optional-dependencies.bench = { file = ["requirements/bench.txt"] }
 optional-dependencies.tune = { file = ["requirements/tune.txt"] }
+
+[tool.uv.sources]
+torch = { index = "pytorch" }
+torchvision = { index = "pytorch" }
+
+[[tool.uv.index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu116"
+explicit = true

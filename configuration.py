@@ -9,11 +9,11 @@ str_platform = 'cu113'
 reid_env = 'centroids'
 reid_script = 'centroid_reid.py'
 
-reid_home = 'reid/'
+reid_home = 'reid/centroids-reid'
 
 
 dataset = {'SoccerNet':
-                {'root_dir': './data/SoccerNet',
+                {'root_dir': './data/SoccerNet/jersey-2023',
                  'working_dir': './out/SoccerNetResults',
                  'test': {
                         'images': 'test/images',

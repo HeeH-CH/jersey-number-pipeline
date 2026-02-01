@@ -2,7 +2,8 @@ from pathlib import Path
 import sys
 import os
 import argparse
-
+import distutils.version 
+print("EXEC:", sys.executable)
 ROOT = './reid/centroids-reid/'
 sys.path.append(str(ROOT))  # add ROOT to PATH
 
@@ -35,13 +36,13 @@ def get_specs_from_version(model_version):
     conf, weights = str(conf), str(weights)
     return conf, weights
 
-def generate_features(input_folder, output_folder, model_version='res50_market'):
+def generate_features(input_folder, output_folder, model_version='res50_market', batch_size=32):
     # load model
     CONFIG_FILE, MODEL_FILE = get_specs_from_version(model_version)
     cfg.merge_from_file(CONFIG_FILE)
     opts = ["MODEL.PRETRAIN_PATH", MODEL_FILE, "MODEL.PRETRAINED", True, "TEST.ONLY_TEST", True, "MODEL.RESUME_TRAINING", False]
     cfg.merge_from_list(opts)
-    
+
     use_cuda = True if torch.cuda.is_available() and cfg.GPU_IDS else False
     model = CTLModel.load_from_checkpoint(cfg.MODEL.PRETRAIN_PATH, cfg=cfg)
 
@@ -56,34 +57,52 @@ def generate_features(input_folder, output_folder, model_version='res50_market')
     val_transforms = transforms_base.build_transforms(is_train=False)
 
     for track in tqdm(tracks):
-        features = []
         track_path = os.path.join(input_folder, track)
-        images = os.listdir(track_path)
+        images = sorted(os.listdir(track_path))
         output_file = os.path.join(output_folder, f"{track}_features.npy")
+
+        # Batch processing: load and transform all images first
+        img_tensors = []
         for img_path in images:
             img = cv2.imread(os.path.join(track_path, img_path))
-            input_img = Image.fromarray(img)
-            input_img = torch.stack([val_transforms(input_img)])
-            with torch.no_grad():
-                _, global_feat = model.backbone(input_img.cuda() if use_cuda else input_img)
-                global_feat = model.bn(global_feat)
-            features.append(global_feat.cpu().numpy().reshape(-1,))
+            if img is not None:
+                input_img = Image.fromarray(img)
+                img_tensors.append(val_transforms(input_img))
 
-        np_feat = np.array(features)
+        if not img_tensors:
+            continue
+
+        # Process in batches
+        all_features = []
+        for i in range(0, len(img_tensors), batch_size):
+            batch = img_tensors[i:i + batch_size]
+            batch_tensor = torch.stack(batch)
+
+            with torch.no_grad():
+                if use_cuda:
+                    batch_tensor = batch_tensor.cuda()
+                _, global_feat = model.backbone(batch_tensor)
+                global_feat = model.bn(global_feat)
+                all_features.append(global_feat.cpu())
+
+        # Concatenate all features
+        features = torch.cat(all_features, dim=0).numpy()
+
         with open(output_file, 'wb') as f:
-            np.save(f, np_feat)
+            np.save(f, features)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--tracklets_folder', help="Folder containing tracklet directories with images")
     parser.add_argument('--output_folder', help="Folder to store features in, one file per tracklet")
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size for processing (default: 32)')
     args = parser.parse_args()
 
     #create if does not exist
     Path(args.output_folder).mkdir(parents=True, exist_ok=True)
 
-    generate_features(args.tracklets_folder, args.output_folder)
+    generate_features(args.tracklets_folder, args.output_folder, batch_size=args.batch_size)
 
 
 
